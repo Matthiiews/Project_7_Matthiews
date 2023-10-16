@@ -4,113 +4,79 @@ budgétaire.
 """
 
 # Import module
-from tqdm import tqdm
 import csv
-import time
 import sys
+import time
+import tracemalloc
+import combinations as cb
+
+tracemalloc.start()
+
+MAX_BUDGET = float(sys.argv[2])
+
+filename = sys.argv[1]
+
+start = time.time()
 
 
-def read_csv(filename):
-    """Importation de données sur les actions à partir d'un fichier csv
-    Filtrer les données corrompues
+with open(filename, newline='') as csv_file:
+    reader = csv.reader(csv_file, delimiter=',')
+    next(reader)
 
-    @return: données sur les actions (liste)
-    """
-    try:
-        with open(filename) as csvfile:
-            shares_file = csv.reader(csvfile, delimiter=',')
-            if filename != "data/test_shares.csv":
-                next(csvfile)  # skip first row in both datasets
-            shares_list = []
-            for row in shares_file:
-                if float(row[1]) > 0 and float(row[2]) > 0:
-                    share = (row[0], int(float(row[1]) * 100),
-                             float(float(row[1]) * float(row[2]) / 100))
-                    shares_list.append(share)
-            return shares_list
+    actions = [[row[0], abs(float(row[1])), float(row[2])] for row in reader
+               if (float(row[1]) != 0.0 and float(row[1]) > 0)]
 
-    except FileNotFoundError:
-        print(f"\nFile '{filename}' does not exist. Please try again.\n")
-        time.sleep(1)
-        sys.exit()
+nb_actions = len(actions)
+
+print(f"Getting actions from file is completed in : \
+      {cb.psdo_execution_time(start)}")
 
 
-def knapsack(shares_list):
-    """Initialiser la matrice (ks) pour le problème knapsack 0-1
-    Obtenir la meilleure combinaison d'actions
-
-    @param shares_list: données relatives aux actions (liste)
-    @return: meilleure combinaison possible (liste)
-    """
-    max_inv = int(MAX_INVEST * 100)     # capacity
-    shares_total = len(shares_list)
-    cost = [share[1] for share in shares_list]       # weights
-    profit = [share[2] for share in shares_list]     # values
-
-    # Trouver le profit optimal
-    ks = [[0 for x in range(max_inv + 1)] for _ in range(shares_total + 1)]
-    for i in tqdm(range(1, shares_total + 1)):
-        for w in range(1, max_inv + 1):
-            if cost[i-1] <= w:
-                ks[i][w] = max(profit[i-1] + ks[i-1][w-cost[i-1]], ks[i-1][w])
-            else:
-                ks[i][w] = ks[i-1][w]
-
-    # Recherche d'une combinaison d'actions à partir d'un profit optimal
-    best_combo = []
-
-    while max_inv >= 0 and shares_total >= 0:
-
-        if ks[shares_total][max_inv] == \
-            ks[shares_total-1][max_inv - cost[shares_total-1]] \
-                + profit[shares_total-1]:
-
-            best_combo.append(shares_list[shares_total-1])
-            max_inv -= cost[shares_total-1]
-
-        shares_total -= 1
-    return best_combo
+for action in actions:
+    action.append(round(action[1]*action[2]/100, 2))
 
 
-def display_results(best_combo):
-    """Afficher les résultats de la meilleure combinaison
+print(f"Appending to each action completed in : \
+      {cb.psdo_execution_time(start)} ms")
 
-    @param best_combo: combinaison d'actions la plus rentable (liste)
-    """
-    print(f"\nInvestissement le plus rentable ({len(best_combo)} Actions) :\n")
-    cost = []
-    profit = []
-    for item in best_combo:
-        print(f"{item[0]} | {item[1] / 100} € | +{item[2]} €")
-        cost.append(item[1] / 100)
-        profit.append(item[2])
-    print("\nTotal cost : ", sum(cost), "€")
-    print("Profit after 2 years : +", sum(profit), "€")
-    print("\nTime elapsed : ", time.time() - start_time, "seconds\n")
+# Trier par le profit
+actions.sort(key=lambda x: x[2], reverse=True)
 
+print(f"Sorting actions by profit completed in : \
+      {cb.psdo_execution_time(start)} ms")
 
-def main():
-    """Vérification de l'entrée du nom de fichier"""
-    try:
-        filename = "data/" + sys.argv[1] + ".csv"
-    except IndexError:
-        print("\nNo filename found. Please try again.\n")
-        time.sleep(1)
-        sys.exit()
+i = 0
+total_cost = 0
+total_profit = 0
+selected_actions = []
 
-    shares_list = read_csv(filename)
+while total_cost <= MAX_BUDGET and i <= nb_actions-1:
+    if total_cost + actions[i][1] <= MAX_BUDGET:
+        total_cost += actions[i][1]
+        total_profit += actions[i][3]
+        selected_actions.append(actions[i])
+    i += 1
+print(f"Getting all actions in budget completed in : \
+      {cb.psdo_execution_time(start)} ms")
 
-    print(f"\nProcessing '{sys.argv[1]}'({len(shares_list)} valid shares) \
-            for {MAX_INVEST} € :")
-
-    display_results(knapsack(shares_list))
+print(f"Nombre d'actions au total : {nb_actions}")
+print(f"Nombre d'actions sélectionnées au total : {len(selected_actions)}")
 
 
-if __name__ == "__main__":
-    start_time = time.time()
-    # Vérification de l'investissement personnalisé en numéraire(default = 500)
-    try:
-        MAX_INVEST = float(sys.argv[2])
-    except IndexError:
-        MAX_INVEST = 500
-    main()
+for selected_action in selected_actions:
+    print(f"{selected_action[0]:<15} {selected_action[1]:>7} \
+          {selected_action[2]:>7} {selected_action[3]:>7}")
+
+print(f"Out putting actions completed in : {cb.psdo_execution_time(start)} ms")
+
+print(f"Coût total : {total_cost:.2f}")
+
+print(f"Profit total : {total_profit:.2f}")
+
+print(f"Completing full exécution in : {cb.psdo_execution_time(start)} ms")
+
+second_size, second_peak = tracemalloc.get_traced_memory()
+
+print(f"Total mmemory size used :{second_size/1024} KiB")
+
+tracemalloc.stop()

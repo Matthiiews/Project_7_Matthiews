@@ -8,9 +8,14 @@ import math
 import time
 
 
-def execution_time(start_time):
-    end_time = time.time()
-    print(f"Temps: {end_time - start_time}")
+def execution_time(start):
+    end = time.time()
+    print(f"Temps: {end - start}")
+
+
+def psdo_execution_time(start):
+    end = time.time()
+    return (end - start)
 
 
 def get_actions_from_csv(filename):
@@ -22,19 +27,15 @@ def get_actions_from_csv(filename):
         reader = csv.reader(csv_file, delimiter=',')
         next(reader)
 
-        for row in reader:
-            row[1] = float(row[1])
-            if row[1] != 0:
-                if row[1] < 0:
-                    row[1] = -row[1]
-                row[2] = float(row[2])
-                actions.append(row)
+        actions = [[row[0], abs(float(row[1])), float(row[2])]
+                   for row in reader if float(row[1]) != 0.0]
     return actions
 
 
 def show_combinations_number(nb_actions):
     """
-    Calculer le nombre de combinaisons possibles à partir d'un nombre d'actions
+    Calculer le nombre de combinaisons possibles à partir d'un nombre
+    d'actions.
     """
     somme = 0
     for k in range(0, nb_actions):
@@ -77,11 +78,13 @@ def get_all_combinations_in_budget(combinations, combinations_in_budget,
     ne dépasse pas le budget max.
     """
     for combination in combinations:
+        # print(f"combinaison: {combination}")
         cost = 0
         for action in combination:
             cost += action[1]
         if cost <= max_budget:
             combinations_in_budget.append(combination)
+
     print(f"Nombre total dans le budget : {len(combinations_in_budget)}")
 
 
