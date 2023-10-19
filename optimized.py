@@ -26,7 +26,7 @@ with open(filename, newline='') as csv_file:
     actions = [[row[0], abs(float(row[1])), float(row[2])] for row in reader
                if (float(row[1]) != 0.0 and float(row[1]) > 0)]
 
-nb_actions = len(actions)
+nb_actions = len(actions)  # Calcule le nombre d'éléments dans le liste enreg
 
 print(f"Getting actions from file is completed in : \
       {cb.psdo_execution_time(start)}")
@@ -45,17 +45,19 @@ actions.sort(key=lambda x: x[2], reverse=True)
 print(f"Sorting actions by profit completed in : \
       {cb.psdo_execution_time(start)} ms")
 
-i = 0
+i = 0  # Initialise le compteur 'i' à zéro
 total_cost = 0
 total_profit = 0
-selected_actions = []
+selected_actions = []  # Initialise une liste vide pour stocker les actions
 
+""" Pour selectionner des actions en fonction du budget maximal jusqu'à ce que
+le budget soit dépassé, ou que toutes les actions aient été parcourues """
 while total_cost <= MAX_BUDGET and i <= nb_actions-1:
     if total_cost + actions[i][1] <= MAX_BUDGET:
         total_cost += actions[i][1]
         total_profit += actions[i][3]
         selected_actions.append(actions[i])
-    i += 1
+    i += 1  # incrémentattion du compteur 'i'
 print(f"Getting all actions in budget completed in : \
       {cb.psdo_execution_time(start)} ms")
 
